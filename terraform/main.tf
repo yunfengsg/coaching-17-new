@@ -20,6 +20,9 @@ data "aws_subnets" "public" {
 resource "aws_ecr_repository" "ecr" {
   name         = "${local.prefix}-ecr"
   force_delete = true
+  encryption_configuration {
+encryption_type = "KMS"
+}
 }
 
 module "ecs" {
