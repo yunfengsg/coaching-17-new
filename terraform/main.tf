@@ -17,12 +17,10 @@ data "aws_subnets" "public" {
   }
 }
 
+
 resource "aws_ecr_repository" "ecr" {
   name         = "${local.prefix}-ecr"
   force_delete = true
-  encryption_configuration {
-encryption_type = "KMS"
-}
 }
 
 module "ecs" {
@@ -30,7 +28,6 @@ module "ecs" {
   version = "~> 5.9.0"
 
   cluster_name = "${local.prefix}-ecs"
-
   fargate_capacity_providers = {
     FARGATE = {
       default_capacity_provider_strategy = {
@@ -40,10 +37,9 @@ module "ecs" {
   }
 
   services = {
-    yyf-ecs-cicd = { #task def and service name -> #Change
+    yyf-ecs-cicd = { #task definition and service name -> #Change
       cpu    = 512
       memory = 1024
-      # Container definition(s)
       container_definitions = {
         yyf-ecs-container = { #container name -> Change
           essential = true
@@ -58,21 +54,9 @@ module "ecs" {
       }
       assign_public_ip                   = true
       deployment_minimum_healthy_percent = 100
-      subnet_ids                         = flatten(data.aws_subnets.public.ids)
-      security_group_ids                 = [module.ecs_sg.security_group_id]
+      subnet_ids                   = flatten(data.aws_subnets.public.ids)
+      security_group_ids           = [[module.ecs_sg.security_group_id]]
     }
   }
 }
 
-module "ecs_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.1.0"
-
-  name        = "${local.prefix}-ecs-sg"
-  description = "Security group for ecs"
-  vpc_id      = data.aws_vpc.default.id
-
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  ingress_rules       = ["http-8080-tcp"]
-  egress_rules        = ["all-all"]
-}
